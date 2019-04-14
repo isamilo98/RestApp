@@ -1,0 +1,111 @@
+namespace ca.mcgill.ecse223.resto.model;
+
+use RestoAppPersistence.ump;
+use RestoAppTableStateMachine.ump;
+
+class RestoApp {
+   1 <@>- * Reservation reservations; // sorted by date and time
+   1 <@>- * Table tables;
+   0..1 -> * Table currentTables; // subsets tables
+   1 <@>- * Order orders;
+   0..1 -> * Order currentOrders; // subsets orders
+   1 <@>- 1 Menu menu;   
+   1 <@>- * PricedMenuItem pricedMenuItems;
+   1 <@>- * Bill bills;
+   1 <@>- * Event events;
+}
+
+class Reservation {
+   Date date;
+   Time time;
+   Integer numberInParty;
+   contactName;
+   contactEmailAddress;
+   contactPhoneNumber;
+   autounique reservationNumber;
+   * reservations -- 1..* Table tables; // only from currentTables
+   
+   //Checks if a time overlaps with this reservation.
+   Boolean doesOverlap(Date date, Time time){
+   		//both time.getTime() and date.getTime() return the same value. Therefore, only one getTime is needed...
+		if(this.time.getTime() - 7200000L < time.getTime() && this.time.getTime() + 7200000L > time.getTime()) {
+		  return true;
+	  	}
+   		return false;
+   }
+   
+}
+
+class Table {
+   unique Integer number;
+   Integer x;
+   Integer y;
+   Integer width;
+   Integer length;
+   const Integer SEAT_WIDTH = 5;
+   const Integer SEAT_LENGTH = 5;  
+   1 <@>- 1..* Seat seats;
+   0..1 -> * Seat currentSeats; // subsets seats
+   
+   // indicates if a table goes on top of another
+    Boolean doesOverlaps(Integer x, Integer y, Integer width , Integer length) {  
+    	if ((this.x <= x && (this.x + this.width + 2*SEAT_WIDTH) >= x) || 
+    	(this.x <= (x + width + 2*SEAT_WIDTH) && (this.x + this.width + 2*SEAT_WIDTH) >= (x + width + 2*SEAT_WIDTH)) || 
+    		(x <= this.x && (x + width + 2*SEAT_WIDTH) >= this.x) || 
+    		(x <= (this.x + this.width + 2*SEAT_WIDTH) && (x + width + 2*SEAT_WIDTH) >= (this.x + this.width + 2*SEAT_WIDTH))) {
+    		if ((this.y <= y && (this.y + this.length + 2*SEAT_LENGTH) >= y) || 
+    		(this.y <= (y + length + 2*SEAT_LENGTH) && (this.y + this.length + 2*SEAT_LENGTH) >= (y + length + 2*SEAT_LENGTH)) ||
+    			(y <= this.y && (y + length + 2*SEAT_LENGTH) >= this.y) || 
+    			(y <= (this.y + this.length + 2*SEAT_LENGTH) && (y + length + 2*SEAT_LENGTH) >= (this.y + this.length + 2*SEAT_LENGTH))) {
+    			return true;
+    		}
+    	}
+    
+    	return false;  
+    }  
+}
+
+class Seat {
+}
+
+class Order {
+   Date date;
+   Time time;
+   autounique number;
+   * orders -- 1..* Table tables; // only from currentTables for currentOrders
+   1 <@>- * OrderItem orderItems;
+}
+
+class OrderItem {
+   Integer quantity;
+   * orderItems -- 1 PricedMenuItem pricedMenuItem; // only from MenuItem.currentPricedMenuItem for currentOrders
+   * orderItems -- 1..* Seat seats; // only from order.tables.seats
+}
+
+class Menu {   
+   1 <@>- * MenuItem menuItems;
+}
+
+class MenuItem {
+   unique name;
+   enum ItemCategory { Appetizer, Main, Dessert, AlcoholicBeverage, NonAlcoholicBeverage }
+   lazy ItemCategory itemCategory;
+   1 -- 1..* PricedMenuItem pricedMenuItems;
+   0..1 -> 0..1 PricedMenuItem currentPricedMenuItem; // subsets priced menus items
+}
+
+class PricedMenuItem {
+   Double price;
+}
+
+class Bill {
+   * bills -- 1 Order order; // order.bills.issuedForSeats = order.orderItems.seats
+   * bills -- 1..* Seat issuedForSeats; // only from order.orderItems.seats;
+}class Event
+{
+  nameOfEvent;
+  description;
+  Date startDate;
+  Date endDate;
+  autounique eventId;
+}
